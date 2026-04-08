@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapContainer, TileLayer, Marker, useMapEvents, GeoJSON } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMapEvents, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 
 // Fix typical leaflet icon issue with React
@@ -46,12 +46,28 @@ export default function InteractiveMap({ waypoints, setWaypoints, geojson }) {
           <Marker key={index} position={wp} />
         ))}
 
-        {geojson && (
-          <GeoJSON 
-            data={geojson} 
-            style={{ color: '#10b981', weight: 5, opacity: 0.8 }} 
-          />
-        )}
+        {(() => {
+          let routePositions = [];
+          if (geojson && geojson.features && geojson.features.length > 0) {
+            try {
+              const feature = geojson.features[0];
+              if (feature.geometry && feature.geometry.coordinates) {
+                routePositions = feature.geometry.coordinates.map(coord => {
+                   if (Array.isArray(coord) && coord.length >= 2) return [coord[1], coord[0]];
+                   return null;
+                }).filter(Boolean);
+              }
+            } catch(e) {
+              console.error("Safely caught map trace render:", e);
+            }
+          }
+          return routePositions.length > 0 ? (
+            <Polyline 
+              positions={routePositions} 
+              pathOptions={{ color: '#10b981', weight: 8, opacity: 0.9, lineCap: 'round', lineJoin: 'round' }} 
+            />
+          ) : null;
+        })()}
       </MapContainer>
     </div>
   );
